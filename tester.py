@@ -29,7 +29,11 @@ def input_hint_none_return_invalid(number: int) -> None:
     return "string"
 
 
-def arg_list(*args) -> str:
+def no_parameters_return_hint_valid() -> str:
+    return "string"
+
+
+def arg_list_return_hint_valid(*args) -> str:
     return "string"
 
 
