@@ -2,24 +2,27 @@ from math import floor
 import random
 import string
 
-#declaring test variables
+# declaring test variables
 test_string = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(32)])
 test_float = float(random.random() * 10)
 test_int = int(floor(random.random() * 10))
 
-#Currently supported test types (input and return)
+# Currently supported test types (input and return)
 supported_types = ['int', 'float', 'str']
 autotest_result = {}
 
-#A sample test that returns the anticipated type
+
+# A sample test that returns the anticipated type
 def int_ret(number: int) -> str:
     string = "cactusmonster"
     return string
 
-#A sample test that returns the wrong type
+
+# A sample test that returns the wrong type
 def false_test(number: int) -> str:
     floating = 3.2222
     return floating
+
 
 def test_typematching(glob):
     for name in list(glob):
@@ -44,6 +47,3 @@ def test_typematching(glob):
                             else:
                                 autotest_result[func] = 'Failed'
     return autotest_result
-
-
-
