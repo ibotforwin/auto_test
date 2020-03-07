@@ -1,49 +1,65 @@
-from math import floor
-import random
-import string
+import inspect
+import types
+from create_object_by_type import create_object
 
-#declaring test variables
-test_string = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(32)])
-test_float = float(random.random() * 10)
-test_int = int(floor(random.random() * 10))
-
-#Currently supported test types (input and return)
-supported_types = ['int', 'float', 'str']
-autotest_result = {}
-
-#A sample test that returns the anticipated type
-def int_ret(number: int) -> str:
-    string = "cactusmonster"
-    return string
-
-#A sample test that returns the wrong type
-def false_test(number: int) -> str:
-    floating = 3.2222
-    return floating
 
 def test_typematching(glob):
-    for name in list(glob):
-        if not name.startswith('__'):
-            try:
-                return_type = str((glob[name].__annotations__)['return'])
-                autotest_result.update({name: return_type.replace("<class '", "").replace("'>", "")})
-            except:
+    autotest_result = {}
+
+    # Create a list of functions that can be tested. This requires type hints for all parameters and return.
+    for function_name, function_pointer in glob.items():
+        # Ignore non functions
+        if not isinstance(function_pointer, types.FunctionType):
+            continue
+
+        # Ignore this function
+        if function_name == inspect.currentframe().f_code.co_name:
+            continue
+
+        parameters = inspect.getfullargspec(function_pointer).args
+        hints = inspect.getfullargspec(function_pointer).annotations
+
+        # Ensure a return type hint exists
+        if 'return' not in hints:
+            continue
+
+        # Ensure all parameters type hints exist
+        def all_parameters_hinted() -> bool:
+            for param in parameters:
+                if param not in hints:
+                    return False
+            return True
+
+        if not all_parameters_hinted():
+            continue
+
+        autotest_result[function_name] = function_pointer
+
+    # Test the given functions
+    for function_name, function_pointer in autotest_result.items():
+
+        # This function only works if all parameters are hinted so the argument list can be built from hint list
+        hints = inspect.getfullargspec(function_pointer).annotations
+
+        # Convert return types of None to NoneType
+        hinted_return_type = type(None) if hints['return'] is None else hints['return']
+
+        # Build the argument list
+        arguments = {}
+        for parameter_name, parameter_type in hints.items():
+
+            # Skip return hint
+            if parameter_name == 'return':
                 continue
-    for func in autotest_result:
-        if autotest_result[func] != None:
-            this_func = glob[func].__annotations__
-            for arg in this_func:
-                if arg != 'return':
-                    input_type = str(this_func[arg]).replace("<class '", "").replace("'>", "")
-                    for available in supported_types:
-                        if available == input_type:
-                            func_return = glob[func]("test_" + input_type)
-                            actual_return_type = str(type(func_return)).replace("<class '", "").replace("'>", "")
-                            if actual_return_type == autotest_result[func]:
-                                autotest_result[func] = 'Passed'
-                            else:
-                                autotest_result[func] = 'Failed'
+
+            # Define automatically generated arguments for all other hints
+            arguments[parameter_name] = create_object(parameter_type)
+
+        # Call function and check return type
+        result = function_pointer(*arguments)
+        if isinstance(result, hinted_return_type):
+            autotest_result[function_name] = 'Passed'
+        else:
+            autotest_result[function_name] = 'Failed'
+
     return autotest_result
-
-
-
